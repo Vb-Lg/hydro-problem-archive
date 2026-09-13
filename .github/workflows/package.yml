@@ -1,0 +1,120 @@
+name: Package Folder and Upload to Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  package-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 1. 检测本次 push 涉及的顶层文件夹
+      - name: Detect changed top-level folders
+        id: changed
+        shell: bash
+        run: |
+          set -e
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            FOLDERS=$(find . -mindepth 1 -maxdepth 1 -type d -not -name '.*' -printf '%f\n' | sort -u)
+          else
+            FOLDERS=$(git diff --name-only "$BEFORE" "$AFTER" \
+              | awk -F/ 'NF>1 && $1 !~ /^\./ {print $1}' \
+              | sort -u)
+          fi
+
+          echo "Detected folders:"
+          echo "$FOLDERS"
+
+          {
+            echo "folders<<EOF"
+            echo "$FOLDERS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      # 2. 压缩：为每个变更的文件夹生成 zip
+      - name: Package folders
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: v1.0
+        shell: bash
+        run: |
+          set -e
+
+          FOLDERS="${{ steps.changed.outputs.folders }}"
+          : > packaged.txt   # 记录本次生成的 zip 列表
+
+          if [ -z "${FOLDERS// }" ]; then
+            echo "No folders changed. Nothing to package."
+            exit 0
+          fi
+
+          # 确保 release 存在（打包前需要读取已有资产做去重）
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG not found, creating..."
+            gh release create "$RELEASE_TAG" \
+              --title "$RELEASE_TAG" \
+              --notes "Auto-created release $RELEASE_TAG"
+          fi
+
+          EXISTING_ASSETS=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' || true)
+
+          while IFS= read -r FOLDER; do
+            [ -z "$FOLDER" ] && continue
+            [ ! -d "$FOLDER" ] && { echo "Skip: '$FOLDER' is not a directory"; continue; }
+
+            ZIP_NAME="${FOLDER}.zip"
+
+            if echo "$EXISTING_ASSETS" | grep -Fxq "$ZIP_NAME"; then
+              echo "✔ Asset '$ZIP_NAME' already exists in release $RELEASE_TAG. Skipping."
+              continue
+            fi
+
+            echo "📦 Creating '$ZIP_NAME' from contents of '$FOLDER' (no top-level folder)..."
+
+            rm -f "$ZIP_NAME"
+            (
+              shopt -s dotglob nullglob
+              cd "$FOLDER"
+              zip -r "../$ZIP_NAME" ./*
+            )
+
+            echo "$ZIP_NAME" >> packaged.txt
+          done <<< "$FOLDERS"
+
+          echo "Packaged files:"
+          cat packaged.txt
+
+      # 3. 上传：把上一步生成的 zip 上传到 release
+      - name: Upload packages to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: v1.0
+        shell: bash
+        run: |
+          set -e
+
+          if [ ! -s packaged.txt ]; then
+            echo "No packages to upload."
+            exit 0
+          fi
+
+          while IFS= read -r ZIP_NAME; do
+            [ -z "$ZIP_NAME" ] && continue
+            [ ! -f "$ZIP_NAME" ] && { echo "Skip: '$ZIP_NAME' not found"; continue; }
+
+            echo "🚀 Uploading '$ZIP_NAME' to release $RELEASE_TAG..."
+            gh release upload "$RELEASE_TAG" "$ZIP_NAME" --clobber
+          done < packaged.txt
