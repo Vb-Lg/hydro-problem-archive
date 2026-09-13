@@ -1,16 +1,16 @@
 # hydro免费题库
 
-点击后从右上角下载按键下载并上传到 Hydro
+数据均为官方数据，题面部分来自 luogu
 
 ## CSP
 
-- [CSP-J 2019](./CSPJ2019.zip)
-- [CSP-J 2020](./CSPJ2020.zip)
-- [CSP-J 2021](./CSPJ2021.zip)
-- [CSP-S 2019](./CSPS2019.zip)
-- [CSP-S 2020](./CSPS2020.zip)
-- [CSP-S 2021](./CSPS2021.zip)
+- [CSP-J 2019](https://github.com/hanyixuanten/hydro-free-problems/releases/download/v1.0/CSPJ2019.zip)
+- [CSP-J 2020](https://github.com/hanyixuanten/hydro-free-problems/releases/download/v1.0/CSPJ2020.zip)
+- [CSP-J 2021](https://github.com/hanyixuanten/hydro-free-problems/releases/download/v1.0/CSPJ2021.zip)
+- [CSP-S 2019](https://github.com/hanyixuanten/hydro-free-problems/releases/download/v1.0/CSPS2019.zip)
+- [CSP-S 2020](https://github.com/hanyixuanten/hydro-free-problems/releases/download/v1.0/CSPS2020.zip)
+- [CSP-S 2021](https://github.com/hanyixuanten/hydro-free-problems/releases/download/v1.0/CSPS2021.zip)
 
 ## USACO
 
-- [USACO 2026 FIRST CONTEST](./USACO2026FIR.zip)
+- [USACO 2026 FIRST CONTEST](https://github.com/hanyixuanten/hydro-free-problems/releases/download/v1.0/USACO2026FIR.zip)
