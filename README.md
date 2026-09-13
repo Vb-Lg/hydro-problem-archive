@@ -20,3 +20,4 @@
 ### USACO
 
 - [USACO 2026 FIRST CONTEST](https://github.com/hanyixuanten/hydro-free-problems/releases/download/v1.0/USACO2026FIR.zip)
+- [USACO 2026 SECOND CONTEST](https://github.com/hanyixuanten/hydro-free-problems/releases/download/v1.0/USACO2026SEC.zip)

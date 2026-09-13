@@ -12,6 +12,9 @@ permissions:
 jobs:
   package-and-upload:
     runs-on: ubuntu-latest
+    # 若本次 push 的 commit message 含有关键词 "nopackage"，则跳过整个 job
+    # （包括 checkout 以及后续所有步骤）
+    if: ${{ !contains(github.event.head_commit.message, 'nopackage') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
