@@ -1,0 +1,7 @@
+CSPJ2019.zip filter=lfs diff=lfs merge=lfs -text
+CSPJ2020.zip filter=lfs diff=lfs merge=lfs -text
+CSPJ2021.zip filter=lfs diff=lfs merge=lfs -text
+CSPS2019.zip filter=lfs diff=lfs merge=lfs -text
+CSPS2020.zip filter=lfs diff=lfs merge=lfs -text
+CSPS2021.zip filter=lfs diff=lfs merge=lfs -text
+USACO2026FIR.zip filter=lfs diff=lfs merge=lfs -text
