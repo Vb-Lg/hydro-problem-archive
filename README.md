@@ -1,6 +1,9 @@
-# Hydro 题库
+# Hydro 题库 / Hydro OJ Problem Archive
 
-本仓库仅收录官方数据，不收录民间数据与 hack 数据。部分题面来自 Luogu。
+CSP-J/S、USACO 官方题面与测试数据，适配 Hydro，通过 GitHub Releases 分发；不收录民间数据与 hack 数据。  
+Official problem statements and test data for Hydro OJ, including CSP-J/S and USACO. Distributed via GitHub Releases. No unofficial or hack data.
+
+部分题面来自 luogu。
 
 如果你无意为本仓库做贡献，请勿 clone 本仓库。你可以直接点击下方下载链接获取文件，并上传至 Hydro 使用。由于 Git LFS 存在 10GB 文件限额，本仓库通过 GitHub Releases 分发文件。
 
