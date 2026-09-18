@@ -24,3 +24,7 @@ Official problem statements and test data for Hydro OJ, including CSP-J/S and US
 
 - [USACO 2026 FIRST CONTEST](https://github.com/hanyixuanten/hydro-free-problems/releases/download/v1.0/USACO2026FIR.zip)
 - [USACO 2026 SECOND CONTEST](https://github.com/hanyixuanten/hydro-free-problems/releases/download/v1.0/USACO2026SEC.zip)
+
+## 模板题
+
+- [Template](https://github.com/hanyixuanten/hydro-problem-archive/releases/download/v1.0/Template.zip)
