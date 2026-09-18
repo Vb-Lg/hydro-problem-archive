@@ -13,7 +13,6 @@ jobs:
   package-and-upload:
     runs-on: ubuntu-latest
     # 若本次 push 的 commit message 含有关键词 "nopackage"，则跳过整个 job
-    # （包括 checkout 以及后续所有步骤）
     if: ${{ !contains(github.event.head_commit.message, 'nopackage') }}
     steps:
       - name: Checkout
@@ -21,8 +20,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 1. 检测本次 push 涉及的顶层文件夹
-      - name: Detect changed top-level folders
+      # 1. 检测本次 push 涉及的顶层文件夹，并区分「修改」和「删除」
+      - name: Detect changed / deleted top-level folders
         id: changed
         shell: bash
         run: |
@@ -31,40 +30,46 @@ jobs:
           AFTER="${{ github.sha }}"
 
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            FOLDERS=$(find . -mindepth 1 -maxdepth 1 -type d -not -name '.*' -printf '%f\n' | sort -u)
+            TOUCHED=$(find . -mindepth 1 -maxdepth 1 -type d -not -name '.*' -printf '%f\n' | sort -u)
           else
-            FOLDERS=$(git diff --name-only "$BEFORE" "$AFTER" \
+            TOUCHED=$(git diff --name-only "$BEFORE" "$AFTER" \
               | awk -F/ 'NF>1 && $1 !~ /^\./ {print $1}' \
               | sort -u)
           fi
 
-          echo "Detected folders:"
-          echo "$FOLDERS"
+          MODIFIED=""
+          DELETED=""
+          while IFS= read -r FOLDER; do
+            [ -z "$FOLDER" ] && continue
+            if [ -d "$FOLDER" ]; then
+              MODIFIED="${MODIFIED}${FOLDER}"$'\n'
+            else
+              DELETED="${DELETED}${FOLDER}"$'\n'
+            fi
+          done <<< "$TOUCHED"
+
+          echo "Modified folders:"
+          echo "$MODIFIED"
+          echo "Deleted folders:"
+          echo "$DELETED"
 
           {
-            echo "folders<<EOF"
-            echo "$FOLDERS"
+            echo "modified<<EOF"
+            echo "$MODIFIED"
+            echo "EOF"
+            echo "deleted<<EOF"
+            echo "$DELETED"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      # 2. 压缩：为每个变更的文件夹生成 zip
-      - name: Package folders
+      # 2. 确保 release 存在
+      - name: Ensure release exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: v1.0
         shell: bash
         run: |
           set -e
-
-          FOLDERS="${{ steps.changed.outputs.folders }}"
-          : > packaged.txt   # 记录本次生成的 zip 列表
-
-          if [ -z "${FOLDERS// }" ]; then
-            echo "No folders changed. Nothing to package."
-            exit 0
-          fi
-
-          # 确保 release 存在（打包前需要读取已有资产做去重）
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             echo "Release $RELEASE_TAG not found, creating..."
             gh release create "$RELEASE_TAG" \
@@ -72,19 +77,51 @@ jobs:
               --notes "Auto-created release $RELEASE_TAG"
           fi
 
+      # 3. 删除：文件夹已被删除 → 从 release 中移除对应 zip
+      - name: Delete packages for removed folders
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: v1.0
+        shell: bash
+        run: |
+          set -e
+          DELETED="${{ steps.changed.outputs.deleted }}"
+          if [ -z "${DELETED// }" ]; then
+            echo "No deleted folders."
+            exit 0
+          fi
+
           EXISTING_ASSETS=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' || true)
+
+          while IFS= read -r FOLDER; do
+            [ -z "$FOLDER" ] && continue
+            ZIP_NAME="${FOLDER}.zip"
+            if echo "$EXISTING_ASSETS" | grep -Fxq "$ZIP_NAME"; then
+              echo "🗑 Deleting asset '$ZIP_NAME' from release $RELEASE_TAG..."
+              gh release delete-asset "$RELEASE_TAG" "$ZIP_NAME" --yes
+            else
+              echo "Asset '$ZIP_NAME' not found in release, skip."
+            fi
+          done <<< "$DELETED"
+
+      # 4. 打包：为每个「有改动」的文件夹重新生成 zip（不再跳过已存在）
+      - name: Package modified folders
+        shell: bash
+        run: |
+          set -e
+          MODIFIED="${{ steps.changed.outputs.modified }}"
+          : > packaged.txt
+
+          if [ -z "${MODIFIED// }" ]; then
+            echo "No folders to package."
+            exit 0
+          fi
 
           while IFS= read -r FOLDER; do
             [ -z "$FOLDER" ] && continue
             [ ! -d "$FOLDER" ] && { echo "Skip: '$FOLDER' is not a directory"; continue; }
 
             ZIP_NAME="${FOLDER}.zip"
-
-            if echo "$EXISTING_ASSETS" | grep -Fxq "$ZIP_NAME"; then
-              echo "✔ Asset '$ZIP_NAME' already exists in release $RELEASE_TAG. Skipping."
-              continue
-            fi
-
             echo "📦 Creating '$ZIP_NAME' from contents of '$FOLDER' (no top-level folder)..."
 
             rm -f "$ZIP_NAME"
@@ -95,12 +132,12 @@ jobs:
             )
 
             echo "$ZIP_NAME" >> packaged.txt
-          done <<< "$FOLDERS"
+          done <<< "$MODIFIED"
 
           echo "Packaged files:"
           cat packaged.txt
 
-      # 3. 上传：把上一步生成的 zip 上传到 release
+      # 5. 上传：覆盖 release 中同名资产
       - name: Upload packages to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -108,7 +145,6 @@ jobs:
         shell: bash
         run: |
           set -e
-
           if [ ! -s packaged.txt ]; then
             echo "No packages to upload."
             exit 0
