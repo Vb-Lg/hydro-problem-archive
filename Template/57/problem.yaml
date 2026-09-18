@@ -1,0 +1,10 @@
+pid: M1002
+owner: 3
+title: '[模板] 单源最短路'
+tag:
+  - 图结构
+  - 最短路
+  - Dijkstra
+  - 优先队列
+nSubmit: 0
+nAccept: 0
