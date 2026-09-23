@@ -7,7 +7,7 @@ Official problem statements and test data for Hydro OJ, including CSP-J/S and US
 
 如果你无意为本仓库做贡献，请勿 clone 本仓库。你可以直接点击下方下载链接获取文件，并上传至 Hydro 使用。由于 Git LFS 存在 10GB 文件限额，本仓库通过 GitHub Releases 分发文件。
 
-如果你想为本仓库做贡献，但不想 clone 体积达数 GB 的仓库，可联系 QQ 1823773407，或发送邮件至[此邮箱](admin@vblg.top)。联系时请备注来意，并将题目和数据发送给我。你也可以新开一个 issue 并提交文件，我看到后会审核并合并。
+如果你想为本仓库做贡献，但不想 clone 体积达数 GB 的仓库，可联系 QQ 1823773407，或发送邮件至[此邮箱](mailto:admin@vblg.top)。联系时请备注来意，并将题目和数据发送给我。你也可以新开一个 issue 并提交文件，我看到后会审核并合并。
 
 ## 下载链接
 
